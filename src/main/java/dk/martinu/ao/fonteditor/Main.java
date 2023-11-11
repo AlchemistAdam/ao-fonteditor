@@ -17,7 +17,7 @@ import dk.martinu.ao.fonteditor.swing.EditorFrame;
  */
 public class Main {
 
-    public static void main(@NotNull final String[] args) {
+    public static void main(@NotNull String[] args) {
         try {
             SwingUtilities.invokeAndWait(() -> {
                 final EditorFrame editor = new EditorFrame();
