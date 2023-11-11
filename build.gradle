@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'dk.martinu'
+version '1.0'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.alchemistadam:ao-client:master-SNAPSHOT'
+    implementation 'com.github.alchemistadam:kofi:master-SNAPSHOT'
+
+    implementation 'org.jetbrains:annotations:23.0.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
+}
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            from components.java
+        }
+    }
+}
