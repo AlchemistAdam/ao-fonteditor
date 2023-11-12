@@ -1,14 +1,12 @@
 package dk.martinu.ao.fonteditor.swing;
 
+import dk.martinu.ao.fonteditor.util.ImageUtil;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.JComponent;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
-import javax.swing.JComponent;
 
 /**
  * Tool constants used when interacting with a glyph on a canvas.
@@ -57,39 +55,17 @@ public enum Tool {
      * @param y    vertical offset of the hotspot
      * @see Toolkit#createCustomCursor(Image, Point, String)
      */
-    Tool(@Nullable final String path, final int x, final int y) {
+    Tool(@Nullable String path, int x, int y) {
+        BufferedImage img = null;
         if (path != null) {
-            final BufferedImage src;
-            try {
-                src = ImageIO.read(new File(path));
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            int iWidth = src.getWidth();
-            int iHeight = src.getHeight();
-            final float ratio = (float) iWidth / (float) iHeight;
-
-            // scale source size to fit inside best cursor size
-            final Toolkit toolkit = Toolkit.getDefaultToolkit();
-            final Dimension size = toolkit.getBestCursorSize(iWidth, iHeight);
-            if (iWidth > size.width) {
-                iWidth = size.width;
-                iHeight = (int) (iWidth / ratio);
-            }
-            if (iHeight > size.height) {
-                iHeight = size.height;
-                iWidth = (int) (iHeight * ratio);
-            }
-
-            final BufferedImage img = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-            final Graphics2D g = img.createGraphics();
-            g.drawImage(src, 0, 0, iWidth, iHeight, null);
-            g.dispose();
-
-            cursor = toolkit.createCustomCursor(img, new Point(x, y), name());
+            img = ImageUtil.createCursorImage(new File(path));
         }
-        else
+
+        if (img != null) {
+            cursor = Toolkit.getDefaultToolkit().createCustomCursor(img, new Point(x, y), name());
+        }
+        else {
             cursor = null;
+        }
     }
 }
