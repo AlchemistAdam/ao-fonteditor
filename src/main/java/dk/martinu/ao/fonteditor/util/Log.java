@@ -154,7 +154,6 @@ public final class Log {
     private static final class LogThread extends Thread {
 
         LogThread() {
-            super(Thread.currentThread().getThreadGroup(), (Runnable) null);
             setDaemon(true);
         }
 
@@ -247,18 +246,28 @@ public final class Log {
         @Override
         public String toString() {
             final MutableString string = new MutableString(256);
+
+            // date, thread and level
             string.add(dateFormat.format(when))
                     .add(' ')
                     .add(threadName)
                     .add(' ')
                     .add(level.name())
                     .add(' ');
-            if (params != null)
+
+            // optional message (and parameters)
+            if (params != null) {
                 string.add(new Formatter((Locale) null).format(msg, params));
-            else
+            }
+            else {
                 string.add(msg);
-            if (ex != null)
-                string.add(ex.toString());
+            }
+
+            // optional exception
+            if (ex != null) {
+                string.add(' ').add(ex.toString());
+            }
+
             return string.toString();
         }
     }
