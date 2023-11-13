@@ -11,7 +11,7 @@ import java.util.Objects;
 
 import javax.swing.JComponent;
 
-import dk.martinu.ao.fonteditor.util.Backdrop;
+import dk.martinu.ao.fonteditor.util.ImageUtil;
 
 /**
  * Simple component that paints a colored square. Used to show a visual
@@ -82,7 +82,7 @@ public class AlphaBox extends JComponent implements ComponentListener {
     @Override
     public void componentResized(@NotNull final ComponentEvent event) {
         final Insets insets = getInsets();
-        backdrop = Backdrop.getBackdrop(getWidth() - 2 - insets.left - insets.right,
+        backdrop = ImageUtil.getBackdropImage(getWidth() - 2 - insets.left - insets.right,
                 getHeight() - 2 - insets.top - insets.bottom);
     }
 

@@ -18,7 +18,7 @@ import javax.swing.border.Border;
 
 import dk.martinu.ao.fonteditor.MutableGlyph;
 import dk.martinu.ao.fonteditor.edit.ValueEdit;
-import dk.martinu.ao.fonteditor.util.Backdrop;
+import dk.martinu.ao.fonteditor.util.ImageUtil;
 
 import static dk.martinu.ao.fonteditor.swing.EditorFrame.*;
 import static java.awt.RenderingHints.KEY_INTERPOLATION;
@@ -148,7 +148,7 @@ public class GlyphCanvas extends JComponent implements PropertyChangeListener {
         this.glyph = Objects.requireNonNull(glyph, "glyph is null");
 //        isDirty = glyph.isDirty;
         image = new BufferedImage(glyph.width, glyph.height, BufferedImage.TYPE_INT_ARGB);
-        backdrop = Backdrop.getBackdrop(glyph.width, glyph.height);
+        backdrop = ImageUtil.getBackdropImage(glyph.width, glyph.height);
         rgba = Arrays.copyOf(editor.getRGBA(), 4);
         renderGlyphToImage();
         setBackground(DEFAULT_BACKGROUND_COLOR);
@@ -421,7 +421,7 @@ public class GlyphCanvas extends JComponent implements PropertyChangeListener {
         image.getRaster().setDataElements(0, 0, width, height,
                 this.image.getRaster().getDataElements(0, 0, width, height, null));
         this.image = image;
-        backdrop = Backdrop.getBackdrop(glyph.width, glyph.height);
+        backdrop = ImageUtil.getBackdropImage(glyph.width, glyph.height);
     }
 
     /**
