@@ -4,8 +4,8 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Mutable handle to an object reference. This class is useful when dealing
- * with non-final local references inside lambda expressions.
+ * Handle to a mutable object reference. This class is useful when dealing
+ * with non-final references inside lambda expressions.
  *
  * @param <T> The runtime type of the reference to store
  * @author Adam Martinu
@@ -20,7 +20,7 @@ public class Value<T> {
     private T value;
 
     /**
-     * Constructs a new {@code Value} object with an initial value of
+     * Constructs a new {@code Value} instance with an initial value of
      * {@code null}.
      */
     public Value() {
@@ -28,14 +28,15 @@ public class Value<T> {
     }
 
     /**
-     * Constructs a new {@code Value} object with the specified initial value.
+     * Constructs a new {@code Value} instance with the specified initial
+     * value.
      */
     public Value(@Nullable T value) {
         this.value = value;
     }
 
     /**
-     * Returns the value.
+     * Returns the current value.
      */
     @Contract(pure = true)
     @Nullable
