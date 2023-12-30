@@ -49,6 +49,17 @@ public class ImageUtil {
      */
     private static final int CELL_COUNT = 10;
 
+    /**
+     * Creates and returns an image from the specified image file, with a size
+     * returned by {@link Toolkit#getBestCursorSize(int, int)} such that
+     * it can be used to create cursor images with
+     * {@link Toolkit#createCustomCursor(Image, Point, String)}. If the source
+     * image size does not match the best cursor size, then it is resized from
+     * the top-left.
+     *
+     * @param file the source image file
+     * @return an image suitable for creating a cursor image
+     */
     @Contract(pure = true)
     @Nullable
     public static BufferedImage createCursorImage(@NotNull File file) {
