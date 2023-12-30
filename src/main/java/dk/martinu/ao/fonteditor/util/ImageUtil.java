@@ -53,42 +53,22 @@ public class ImageUtil {
     @Nullable
     public static BufferedImage createCursorImage(@NotNull File file) {
         Objects.requireNonNull(file, "file is null");
-
-        // cursor image source
-        BufferedImage src;
+        BufferedImage source;
         try {
-            src = ImageIO.read(file);
+            source = ImageIO.read(file);
         }
         catch (IOException e) {
             Log.e("could not read cursor image {" + file.getName() + "}", e);
             return null;
         }
-
-        // initial image dimensions
-        int width = src.getWidth();
-        int height = src.getHeight();
-
-        // scale image size to fit inside best cursor size
-        Dimension size = Toolkit.getDefaultToolkit().getBestCursorSize(width, height);
-        float ratio = (float) width / (float) height;
-        if (width > size.width) {
-            width = size.width;
-            height = (int) (width / ratio);
+        Dimension cursorSize = Toolkit.getDefaultToolkit().getBestCursorSize(source.getWidth(), source.getHeight());
+        if (source.getWidth() == cursorSize.width && source.getHeight() == cursorSize.height) {
+            return source;
         }
-        if (height > size.height) {
-            height = size.height;
-            width = (int) (height * ratio);
-        }
-
-        // return source if no scaling is needed
-        if (width == src.getWidth() && height == src.getHeight()) {
-            return src;
-        }
-        // otherwise create scaled image from source
         else {
-            BufferedImage img = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+            BufferedImage img = new BufferedImage(cursorSize.width, cursorSize.height, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = img.createGraphics();
-            g.drawImage(src, 0, 0, width, height, null);
+            g.drawImage(source, 0, 0, source.getWidth(), source.getHeight(), null);
             g.dispose();
             return img;
         }
@@ -115,8 +95,12 @@ public class ImageUtil {
     @Contract(pure = true)
     @NotNull
     public static BufferedImage getBackdropImage(int width, int height) {
-        if (width < 1) { throw new IllegalArgumentException("width is less than 1"); }
-        if (height < 1) { throw new IllegalArgumentException("height is less than 1"); }
+        if (width < 1) {
+            throw new IllegalArgumentException("width is less than 1");
+        }
+        if (height < 1) {
+            throw new IllegalArgumentException("height is less than 1");
+        }
 
         // adjust size to be a multiple of cell size
         if (width % CELL_WIDTH != 0) {
@@ -142,9 +126,11 @@ public class ImageUtil {
         if (img == null) {
             img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = img.createGraphics();
-            for (int x = 0; x < width; x += backdropSource.getWidth())
-                for (int y = 0; y < height; y += backdropSource.getWidth())
+            for (int x = 0; x < width; x += backdropSource.getWidth()) {
+                for (int y = 0; y < height; y += backdropSource.getWidth()) {
                     g.drawImage(backdropSource, x, y, null);
+                }
+            }
             g.dispose();
             cache.put(key, new WeakReference<>(img));
         }
@@ -167,9 +153,11 @@ public class ImageUtil {
         g.fillRect(0, 0, width, height);
 
         g.setColor(Color.LIGHT_GRAY);
-        for (int x = 0; x < CELL_COUNT; x++)
-            for (int y = (x & 1) == 0 ? 0 : 1; y < CELL_COUNT; y += 2)
+        for (int x = 0; x < CELL_COUNT; x++) {
+            for (int y = (x & 1) == 0 ? 0 : 1; y < CELL_COUNT; y += 2) {
                 g.fillRect(x * CELL_WIDTH, y * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
+            }
+        }
 
         g.dispose();
         return img;
