@@ -16,7 +16,7 @@ public enum Tool {
     /**
      * Eraser for removing pixels.
      */
-    ERASER("res/images/cursor/eraser_cursor.png", 0, 12),
+    ERASER("res/images/cursor/eraser_cursor.png", 0, 9),
     /**
      * Move tool for moving the glyph image. This is the default tool.
      */
