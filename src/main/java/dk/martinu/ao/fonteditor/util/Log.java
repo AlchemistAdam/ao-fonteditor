@@ -62,7 +62,7 @@ public final class Log {
      * @param msg    the message
      * @param params optional parameters for formatting the message
      */
-    public static void d(@NotNull final String msg, @Nullable final Object... params) {
+    public static void d(@NotNull String msg, @Nullable Object... params) {
         records.add(new Record(Level.DEBUG, msg, null, params));
     }
 
@@ -73,7 +73,7 @@ public final class Log {
      * @param ex     the throwable related to the message, or {@code null}
      * @param params optional parameters for formatting the message
      */
-    public static void d(@NotNull final String msg, @Nullable final Throwable ex, @Nullable final Object... params) {
+    public static void d(@NotNull String msg, @Nullable Throwable ex, @Nullable Object... params) {
         records.add(new Record(Level.DEBUG, msg, ex, params));
     }
 
@@ -83,7 +83,7 @@ public final class Log {
      * @param msg    the message
      * @param params optional parameters for formatting the message
      */
-    public static void e(@NotNull final String msg, @NotNull final Object... params) {
+    public static void e(@NotNull String msg, @NotNull Object... params) {
         records.add(new Record(Level.ERROR, msg, null, params));
     }
 
@@ -94,7 +94,7 @@ public final class Log {
      * @param ex     the throwable related to the message, or {@code null}
      * @param params optional parameters for formatting the message
      */
-    public static void e(@NotNull final String msg, @Nullable final Throwable ex, @Nullable final Object... params) {
+    public static void e(@NotNull String msg, @Nullable Throwable ex, @Nullable Object... params) {
         records.add(new Record(Level.ERROR, msg, ex, params));
     }
 
@@ -104,7 +104,7 @@ public final class Log {
      * @param msg    the message
      * @param params optional parameters for formatting the message
      */
-    public static void i(@NotNull final String msg, @NotNull final Object... params) {
+    public static void i(@NotNull String msg, @NotNull Object... params) {
         records.add(new Record(Level.INFO, msg, null, params));
     }
 
@@ -115,7 +115,7 @@ public final class Log {
      * @param ex     the throwable related to the message, or {@code null}
      * @param params optional parameters for formatting the message
      */
-    public static void i(@NotNull final String msg, @Nullable final Throwable ex, @Nullable final Object... params) {
+    public static void i(@NotNull String msg, @Nullable Throwable ex, @Nullable Object... params) {
         records.add(new Record(Level.INFO, msg, ex, params));
     }
 
@@ -125,7 +125,7 @@ public final class Log {
      * @param msg    the message
      * @param params optional parameters for formatting the message
      */
-    public static void w(@NotNull final String msg, @NotNull final Object... params) {
+    public static void w(@NotNull String msg, @NotNull Object... params) {
         records.add(new Record(Level.WARNING, msg, null, params));
     }
 
@@ -136,7 +136,7 @@ public final class Log {
      * @param ex     the throwable related to the message, or {@code null}
      * @param params optional parameters for formatting the message
      */
-    public static void w(@NotNull final String msg, @Nullable final Throwable ex, @Nullable final Object... params) {
+    public static void w(@NotNull String msg, @Nullable Throwable ex, @Nullable Object... params) {
         records.add(new Record(Level.WARNING, msg, ex, params));
     }
 
@@ -164,8 +164,8 @@ public final class Log {
                 try {
                     System.out.println(records.take());
                 }
-                catch (final InterruptedException e) {
-                    e.printStackTrace();
+                catch (InterruptedException e) {
+                    Log.e("LogThread was interrupted", e);
                 }
             }
         }
@@ -175,8 +175,25 @@ public final class Log {
      * Data class for storing information about a log record. The string
      * representation of a log record is not created until {@code toString()}
      * is called.
+     *
+     * @param when       millisecond timestamp of when the record was created
+     * @param threadName the name of the thread this record was created on
+     * @param level      the level of verbosity of this record
+     * @param msg        the log message
+     * @param ex         a throwable object related to the log message, can be
+     *                   {@code null}
+     * @param params     an array of parameters for formatting the log message.
+     *                   Can
+     *                   be {@code null} and can also contain {@code null}
+     *                   elements
      */
-    private static final class Record {
+    private record Record(
+            long when,
+            @NotNull String threadName,
+            @NotNull Level level,
+            @NotNull String msg,
+            @Nullable Throwable ex,
+            @Nullable Object[] params) {
 
         /**
          * Default date pattern. An example date would look like
@@ -192,50 +209,19 @@ public final class Log {
         private static final SimpleDateFormat dateFormat = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
 
         /**
-         * Millisecond timestamp of when the record was created.
-         */
-        private final long when;
-        /**
-         * The name of the thread this record was created on.
-         */
-        @NotNull
-        private final String threadName;
-        /**
-         * The level of verbosity of this record.
-         */
-        @NotNull
-        private final Level level;
-        /**
-         * The log message.
-         */
-        @NotNull
-        private final String msg;
-        /**
-         * A throwable object related to the log message, can be {@code null}.
-         */
-        @Nullable
-        private final Throwable ex;
-        /**
-         * An array of parameters for formatting the log message. Can be
-         * {@code null} and can also contain {@code null} elements.
-         */
-        @Nullable
-        private final Object[] params;
-
-        /**
          * Creates a new log record.
          *
          * @throws NullPointerException if {@code level} or {@code msg} is
          *                              {@code null}
          */
-        Record(@NotNull final Level level, @NotNull final String msg, @Nullable final Throwable ex,
-                @Nullable final Object... params) {
-            this.level = Objects.requireNonNull(level, "level is null");
-            this.msg = Objects.requireNonNull(msg, "msg is null");
-            this.ex = ex;
-            this.params = params;
-            when = System.currentTimeMillis();
-            threadName = '[' + Thread.currentThread().getName() + ']';
+        Record(@NotNull Level level, @NotNull String msg, @Nullable Throwable ex, @Nullable Object... params) {
+            this(
+                    System.currentTimeMillis(),
+                    '[' + Thread.currentThread().getName() + ']',
+                    Objects.requireNonNull(level, "level is null"),
+                    Objects.requireNonNull(msg, "msg is null"),
+                    ex,
+                    params);
         }
 
         /**
@@ -245,29 +231,22 @@ public final class Log {
         @NotNull
         @Override
         public String toString() {
-            final MutableString string = new MutableString(256);
-
-            // date, thread and level
+            MutableString string = new MutableString(256);
             string.add(dateFormat.format(when))
-                    .add(' ')
+                    .append(' ')
                     .add(threadName)
-                    .add(' ')
+                    .append(' ')
                     .add(level.name())
-                    .add(' ');
-
-            // optional message (and parameters)
+                    .append(' ');
             if (params != null) {
                 string.add(new Formatter((Locale) null).format(msg, params));
             }
             else {
                 string.add(msg);
             }
-
-            // optional exception
             if (ex != null) {
-                string.add(' ').add(ex.toString());
+                string.add(ex.toString());
             }
-
             return string.toString();
         }
     }
