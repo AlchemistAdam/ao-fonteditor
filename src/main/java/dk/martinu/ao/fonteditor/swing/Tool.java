@@ -16,19 +16,19 @@ public enum Tool {
     /**
      * Eraser for removing pixels.
      */
-    ERASER("res/images/cursor/eraser_cursor.png", 0, 9),
+    ERASER("res/images/cursor/eraser_cursor.png", 4, 10),
     /**
      * Move tool for moving the glyph image. This is the default tool.
      */
-    MOVE("res/images/cursor/move_cursor.png", 6, 6),
+    MOVE("res/images/cursor/move_cursor.png", 7, 7),
     /**
      * Pencil for drawing freeform, one-pixel wide lines.
      */
-    PENCIL("res/images/cursor/pencil_cursor.png", 0, 12),
+    PENCIL("res/images/cursor/pencil_cursor.png", 3, 11),
     /**
      * Color picker for copying a color from the canvas.
      */
-    PICKER("res/images/cursor/picker_cursor.png", 0, 12),
+    PICKER("res/images/cursor/picker_cursor.png", 2, 12),
     /**
      * Selection tool for selecting parts of the canvas.
      */
@@ -36,7 +36,7 @@ public enum Tool {
     /**
      * Magnifying glass for zooming in or out.
      */
-    ZOOM("res/images/cursor/zoom_cursor.png", 0, 0);
+    ZOOM("res/images/cursor/zoom_cursor.png", 5, 5);
 
     /**
      * The cursor of the tool.
