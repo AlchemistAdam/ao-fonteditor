@@ -1,12 +1,11 @@
 package dk.martinu.ao.fonteditor;
 
+import dk.martinu.ao.client.text.Glyph;
+import dk.martinu.ao.fonteditor.edit.EditQueue;
 import org.jetbrains.annotations.*;
 
 import java.awt.image.BufferedImage;
 import java.util.*;
-
-import dk.martinu.ao.client.text.Glyph;
-import dk.martinu.ao.fonteditor.edit.EditQueue;
 
 import static java.awt.image.BufferedImage.*;
 
@@ -24,8 +23,8 @@ public class MutableGlyph {
      */
     @Contract(pure = true)
     @NotNull
-    private static String createName(final char c) {
-        final String value = Character.isISOControl(c) || Character.isWhitespace(c) ?
+    private static String createName(char c) {
+        String value = Character.isISOControl(c) || Character.isWhitespace(c) ?
                 "0x" + Integer.toHexString(c).toUpperCase(Locale.ROOT) :
                 String.valueOf(c);
         return value + " <" + Character.getName(c) + ">";
@@ -62,6 +61,11 @@ public class MutableGlyph {
      */
     public byte[] data;
     /**
+     * Flag set to {@code true} if changes has been made to this glyph since
+     * the last time the font was saved, otherwise {@code false}.
+     */
+    public boolean isDirty = false;
+    /**
      * A string representation of the glyph. This name is stored only for the
      * purpose of displaying glyphs as text in a user interface; it is not
      * saved to the font file.
@@ -92,7 +96,7 @@ public class MutableGlyph {
      *
      * @param glyph the glyph to copy
      */
-    public MutableGlyph(@NotNull final Glyph glyph) {
+    public MutableGlyph(@NotNull Glyph glyph) {
         this(glyph.value, glyph.width, glyph.height, glyph.isWhitespace, glyph.offsetY,
                 glyph.offsetX != null ? glyph.offsetX : new int[0],
                 glyph.data != null ? glyph.data : new byte[glyph.width * glyph.height]);
@@ -108,9 +112,73 @@ public class MutableGlyph {
      *                     {@code false}
      * @param offsetY      the vertical offset
      */
-    public MutableGlyph(final char value, final int width, final int height, final boolean isWhitespace,
-            final int offsetY) {
+    public MutableGlyph(char value, int width, int height, boolean isWhitespace, int offsetY) {
         this(value, width, height, isWhitespace, offsetY, new int[0], new byte[width * height]);
+    }
+
+    /**
+     * Constructs a new mutable glyph with properties imported from the
+     * specified image.
+     *
+     * @param image the image to import as a glyph
+     * @throws NullPointerException if {@code image} is {@code null}
+     */
+    public MutableGlyph(@NotNull BufferedImage image) {
+        Objects.requireNonNull(image, "image is null");
+        value = 'A';
+        width = image.getWidth();
+        height = image.getHeight();
+        isWhitespace = false;
+        offsetY = 0;
+        offsetX = new int[0];
+
+        int len = width * height;
+        data = new byte[len];
+        switch (image.getType()) {
+            // 4 components, rgb + alpha
+            // transfer alpha samples directly into glyph data
+            case TYPE_INT_ARGB,
+                    TYPE_4BYTE_ABGR -> {
+                int[] samples = new int[len];
+                image.getRaster().getSamples(0, 0, width, height, 3, samples);
+                for (int i = 0; i < len; i++) {
+                    System.out.println("sample value: " + samples[i]);
+                    data[i] = (byte) samples[i];
+                }
+            }
+            // 3 components, no alpha
+            // compute alpha as average distance from white (#FFFFFF) to pixel rgb
+            case TYPE_INT_RGB,
+                    TYPE_INT_BGR,
+                    TYPE_3BYTE_BGR -> {
+                int[] pixels = new int[len * 3];
+                image.getRaster().getPixels(0, 0, width, height, pixels);
+                for (int i = 0, pi; i < len; i++) {
+                    // pixel index
+                    pi = i * 3;
+                    int rgb = pixels[pi] + pixels[pi + 1] + pixels[pi + 2];
+                    data[i] = (byte) ((765 - rgb) / 3);
+                }
+            }
+            // TESTME 4 components, pre-multiplied alpha
+            // same process as 3 component images, but ignore alpha channel
+            case TYPE_INT_ARGB_PRE,
+                    TYPE_4BYTE_ABGR_PRE -> {
+                int[] pixels = new int[len * 4];
+                image.getRaster().getPixels(0, 0, width, height, pixels);
+                for (int i = 0, pi; i < len; i++) {
+                    // pixel index
+                    pi = i * 4;
+                    int rgb = pixels[pi] + pixels[pi + 1] + pixels[pi + 2];
+                    data[i] = (byte) ((765 - rgb) / 3);
+                }
+            }
+            // TODO implement solutions for remaining image types
+            default ->
+                    throw new IllegalArgumentException("unsupported image type {" + image.getType() + "}");
+        }
+
+        name = createName(value);
     }
 
     /**
@@ -125,8 +193,14 @@ public class MutableGlyph {
      * @param offsetX      the horizontal offsets
      * @param data         the alpha data array
      */
-    private MutableGlyph(final char value, final int width, final int height, final boolean isWhitespace,
-            final int offsetY, final int[] offsetX, final byte[] data) {
+    private MutableGlyph(
+            char value,
+            int width,
+            int height,
+            boolean isWhitespace,
+            int offsetY,
+            int[] offsetX,
+            byte[] data) {
         this.value = value;
         this.width = width;
         this.height = height;
@@ -134,59 +208,6 @@ public class MutableGlyph {
         this.offsetY = offsetY;
         this.offsetX = Objects.requireNonNull(offsetX, "offsetX is null");
         this.data = Objects.requireNonNull(data, "data is null");
-        name = createName(value);
-    }
-
-    /**
-     * Constructs a new mutable glyph with properties imported from the
-     * specified image.
-     *
-     * @param image the image to import as a glyph
-     * @throws NullPointerException if {@code image} is {@code null}
-     */
-    public MutableGlyph(@NotNull final BufferedImage image) {
-        Objects.requireNonNull(image, "image is null");
-        value = 'A';
-        width = image.getWidth();
-        height = image.getHeight();
-        isWhitespace = false;
-        offsetY = 0;
-        offsetX = new int[0];
-
-        final int len = width * height;
-        data = new byte[len];
-        switch (image.getType()) {
-            // image types with 4 components (alpha)
-            // transfer alpha samples directly into glyph data
-            case TYPE_INT_ARGB,
-                    TYPE_4BYTE_ABGR -> {
-                final int[] samples = new int[len];
-                image.getRaster().getSamples(0, 0, width, height, 3, samples);
-                for (int i = 0; i < len; i++) {
-                    data[i] = (byte) samples[i];
-                }
-            }
-            // image types with 3 components (no alpha)
-            // compute alpha as distance from white (255,255,255) to pixel color
-            case TYPE_INT_RGB,
-                    TYPE_INT_BGR,
-                    TYPE_INT_ARGB_PRE,
-                    TYPE_3BYTE_BGR,
-                    TYPE_4BYTE_ABGR_PRE -> {
-                final int white = 255 * 3;
-                final int[] pixels = new int[len * 3];
-                image.getRaster().getPixels(0, 0, width, height, pixels);
-                for (int i = 0, pi; i < len; i++) {
-                    // pixel index
-                    pi = i * 3;
-                    final int rgb = pixels[pi] + pixels[pi + 1] + pixels[pi + 2]; // order of samples is irrelevant
-                    data[i] = (byte) ((white - rgb) / 3);
-                }
-            }
-            // TODO implement solutions for remaining image types
-            default -> throw new IllegalArgumentException("invalid image type");
-        }
-
         name = createName(value);
     }
 
@@ -210,10 +231,11 @@ public class MutableGlyph {
      */
     @Contract(value = "null -> false", pure = true)
     @Override
-    public boolean equals(@Nullable final Object obj) {
-        if (obj == this)
+    public boolean equals(@Nullable Object obj) {
+        if (obj == this) {
             return true;
-        else if (obj instanceof MutableGlyph mGlyph)
+        }
+        else if (obj instanceof MutableGlyph mGlyph) {
             return mGlyph.isWhitespace == isWhitespace
                     && mGlyph.width == width
                     && mGlyph.height == height
@@ -221,7 +243,9 @@ public class MutableGlyph {
                     && mGlyph.offsetY == offsetY
                     && Arrays.equals(mGlyph.offsetX, offsetX)
                     && Arrays.equals(mGlyph.data, data);
-        else
+        }
+        else {
             return false;
+        }
     }
 }
