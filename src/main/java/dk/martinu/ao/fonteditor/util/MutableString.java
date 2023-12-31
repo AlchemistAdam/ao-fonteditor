@@ -16,131 +16,145 @@
  */
 package dk.martinu.ao.fonteditor.util;
 
-import java.util.ArrayList;
+import org.jetbrains.annotations.*;
+
 import java.util.Arrays;
 
 /**
  * @author Adam Martinu
- * @version 1.1 2021-04-27
+ * @version 1.1 2023-12-31
  */
-@SuppressWarnings("unused")
 public class MutableString implements Appendable, CharSequence {
 
-    protected static final int DEFAULT_LENGTH = 128;
-    protected static final String NULL = "null";
+    private static final int DEFAULT_LENGTH = 128;
+    private static final String NULL = "null";
 
     public char[] chars;
     public int index = 0;
 
-    public MutableString(final int capacity) {
+    @Contract(pure = true)
+    public MutableString(int capacity) {
         chars = new char[capacity];
     }
 
+    @Contract(pure = true)
     public MutableString() {
         chars = new char[DEFAULT_LENGTH];
     }
 
-    public MutableString(CharSequence csq, final int start, final int end) throws IndexOutOfBoundsException {
-        if (csq == null)
+    @Contract(pure = true)
+    public MutableString(@Nullable CharSequence csq, int start, int end) throws IndexOutOfBoundsException {
+        if (csq == null) {
             csq = NULL;
-
-        if (start < 0)
-            throw new IndexOutOfBoundsException(start);
-        if (end < 0)
-            throw new IndexOutOfBoundsException(end);
-        if (start > end)
-            throw new IndexOutOfBoundsException(start);
-        if (end > csq.length())
-            throw new IndexOutOfBoundsException(end);
-
-        final int csqSize = end - start;
-        int length = DEFAULT_LENGTH;
-        while (csqSize > length)
-            length <<= 1;
-        chars = new char[length];
-        for (int i = start; i < end; i++)
+        }
+        if (end < 0 || end > csq.length()) {
+            throw new IndexOutOfBoundsException("end is out of bounds {" + start + "}");
+        }
+        if (start < 0 || start > end) {
+            throw new IndexOutOfBoundsException("start is out of bounds {" + start + "}");
+        }
+        int csqLen = end - start;
+        int len = DEFAULT_LENGTH;
+        while (csqLen > len) {
+            len <<= 1;
+        }
+        chars = new char[len];
+        for (int i = start; i < end; i++) {
             chars[index++] = csq.charAt(i);
+        }
     }
 
-    public MutableString add(final CharSequence csq) {
+    @Contract(value = "_ -> this", mutates = "this")
+    @NotNull
+    public MutableString add(@Nullable CharSequence csq) {
         return append(csq);
     }
 
-    public MutableString add(final CharSequence csq, final int start, final int end) throws IndexOutOfBoundsException {
-        return append(csq, start, end);
-    }
+//    public MutableString add(CharSequence csq, int start, int end) throws IndexOutOfBoundsException {
+//        return append(csq, start, end);
+//    }
 
-    public MutableString add(final char c) {
-        return append(c);
-    }
+//    public MutableString add(char c) {
+//        return append(c);
+//    }
 
-    public MutableString add(final char... csq) {
-        return append(csq);
-    }
+//    public MutableString add(char... csq) {
+//        return append(csq);
+//    }
 
-    public MutableString add(final Object o) {
+    @Contract(value = "_ -> this", mutates = "this")
+    @NotNull
+    public MutableString add(@Nullable Object o) {
         return append(String.valueOf(o));
     }
 
-    public MutableString append(char... csq) {
-        if (csq == null)
-            csq = NULL.toCharArray();
-        else if (csq.length == 0)
-            return this;
+//    @Contract(value = "_ -> this", mutates = "this")
+//    @NotNull
+//    public MutableString append(char... csq) {
+//        if (csq == null) {
+//            csq = NULL.toCharArray();
+//        }
+//        ensureCapacity(index + csq.length);
+//        for (char c : csq) {
+//            chars[index++] = c;
+//        }
+//        return this;
+//    }
 
-        ensureCapacity(index + csq.length);
-        for (final char c : csq)
-            chars[index++] = c;
-        return this;
-    }
-
+    @Contract(value = "_ -> this", mutates = "this")
     @Override
-    public MutableString append(CharSequence csq) {
-        if (csq == null)
+    @NotNull
+    public MutableString append(@Nullable CharSequence csq) {
+        if (csq == null) {
             csq = NULL;
-
-        ensureCapacity(index + csq.length());
-        for (int i = 0; i < csq.length(); i++)
+        }
+        int len = csq.length();
+        ensureCapacity(index + len);
+        for (int i = 0; i < len; i++) {
             chars[index++] = csq.charAt(i);
+        }
         return this;
     }
 
+    @Contract(value = "_, _, _ -> this", mutates = "this")
     @Override
-    public MutableString append(CharSequence csq, final int start, final int end) throws IndexOutOfBoundsException {
-        if (csq == null)
+    @NotNull
+    public MutableString append(@Nullable CharSequence csq, int start, int end) throws IndexOutOfBoundsException {
+        if (csq == null) {
             csq = NULL;
-
-        if (start < 0)
-            throw new IndexOutOfBoundsException(start);
-        if (end < 0)
-            throw new IndexOutOfBoundsException(end);
-        if (start > end)
-            throw new IndexOutOfBoundsException(start);
-        if (end > csq.length())
-            throw new IndexOutOfBoundsException(end);
-
-        final int size = end - start;
+        }
+        if (end < 0 || end > csq.length()) {
+            throw new IndexOutOfBoundsException("end is out of bounds {" + start + "}");
+        }
+        if (start < 0 || start > end) {
+            throw new IndexOutOfBoundsException("start is out of bounds {" + start + "}");
+        }
+        int size = end - start;
         ensureCapacity(index + size);
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             chars[index++] = csq.charAt(i + start);
+        }
         return this;
     }
 
+    @Contract(value = "_ -> this", mutates = "this")
     @Override
-    public MutableString append(final char c) {
+    @NotNull
+    public MutableString append(char c) {
         ensureCapacity(index + 1);
         chars[index++] = c;
         return this;
     }
 
-    public int available() {
-        return chars.length - index;
-    }
+//    public int available() {
+//        return chars.length - index;
+//    }
 
     @Override
-    public char charAt(final int index) throws IndexOutOfBoundsException {
-        if (index < 0 || index >= this.index)
+    public char charAt(int index) throws IndexOutOfBoundsException {
+        if (index < 0 || index >= this.index) {
             throw new IndexOutOfBoundsException(index);
+        }
         return chars[index];
     }
 
@@ -148,63 +162,70 @@ public class MutableString implements Appendable, CharSequence {
         index = 0;
     }
 
-    public void delete(final int from) throws IndexOutOfBoundsException {
-        if (from < 0 || from > index)
-            throw new IndexOutOfBoundsException(from);
-        index = from;
-    }
+//    public void delete(int from) throws IndexOutOfBoundsException {
+//        if (from < 0 || from > index) {
+//            throw new IndexOutOfBoundsException(from);
+//        }
+//        index = from;
+//    }
 
-    public void delete(final int from, final int to) throws IndexOutOfBoundsException {
-        if (from < 0)
-            throw new IndexOutOfBoundsException(from);
-        if (to < 0)
-            throw new IndexOutOfBoundsException(to);
-        if (from > to)
-            throw new IndexOutOfBoundsException(from);
-        if (to > index)
-            throw new IndexOutOfBoundsException(to);
-        for (int i = from, k = to; i < to && k < index; i++, k++)
-            chars[i] = chars[k];
-        index -= (to - from);
-    }
+//    public void delete(int from, int to) throws IndexOutOfBoundsException {
+//        if (from < 0) { throw new IndexOutOfBoundsException(from); }
+//        if (to < 0) { throw new IndexOutOfBoundsException(to); }
+//        if (from > to) { throw new IndexOutOfBoundsException(from); }
+//        if (to > index) { throw new IndexOutOfBoundsException(to); }
+//        for (int i = from, k = to; i < to && k < index; i++, k++) {
+//            chars[i] = chars[k];
+//        }
+//        index -= (to - from);
+//    }
 
-    public void ensureCapacity(final int capacity) {
+    public void ensureCapacity(int capacity) {
         if (capacity > chars.length) {
             int newLength = chars.length << 1;
-            while (capacity > newLength)
+            while (capacity > newLength) {
                 newLength <<= 1;
+            }
             chars = Arrays.copyOf(chars, newLength);
         }
     }
 
+    @Contract(value = "null -> false", pure = true)
     @Override
-    public boolean equals(final Object o) {
-        if (this == o)
-            return true;
-        else if (o instanceof MutableString) {
-            final MutableString ms = (MutableString) o;
-            if (index != ms.index)
-                return false;
-            for (int i = 0; i < index; i++)
-                if (chars[i] != ms.chars[i])
-                    return false;
+    public boolean equals(@Nullable Object o) {
+        if (this == o) {
             return true;
         }
-        else if (o instanceof CharSequence) {
-            final CharSequence csq = (CharSequence) o;
-            if (index != csq.length())
+        else if (o instanceof MutableString ms) {
+            if (index != ms.index) {
                 return false;
-            for (int i = 0; i < index; i++)
-                if (chars[i] != csq.charAt(i))
+            }
+            for (int i = 0; i < index; i++) {
+                if (chars[i] != ms.chars[i]) {
                     return false;
+                }
+            }
             return true;
         }
-        else
+        else if (o instanceof CharSequence csq) {
+            if (index != csq.length()) {
+                return false;
+            }
+            for (int i = 0; i < index; i++) {
+                if (chars[i] != csq.charAt(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else {
             return false;
+        }
     }
 
-    public String get() {
-        final String s = toString();
+    @NotNull
+    public String getAndClear() {
+        String s = toString();
         clear();
         return s;
     }
@@ -214,21 +235,20 @@ public class MutableString implements Appendable, CharSequence {
         return Arrays.hashCode(chars);
     }
 
-    public int indexOf(final char c) {
-        for (int i = 0; i < index; i++)
-            if (chars[i] == c)
-                return i;
-        return -1;
-    }
+//    public int indexOf(char c) {
+//        for (int i = 0; i < index; i++) { if (chars[i] == c) { return i; } }
+//        return -1;
+//    }
 
-    public int indexOf(final char c, final int fromIndex) throws IndexOutOfBoundsException {
-        if (fromIndex < 0 || fromIndex > index)
-            throw new IndexOutOfBoundsException(fromIndex);
-        for (int i = fromIndex; i < index; i++)
-            if (chars[i] == c)
-                return i;
-        return -1;
-    }
+//    public int indexOf(char c, int fromIndex) throws IndexOutOfBoundsException {
+//        if (fromIndex < 0 || fromIndex > index) {
+//            throw new IndexOutOfBoundsException(fromIndex);
+//        }
+//        for (int i = fromIndex; i < index; i++) {
+//            if (chars[i] == c) { return i; }
+//        }
+//        return -1;
+//    }
 
     @Override
     public boolean isEmpty() {
@@ -240,73 +260,78 @@ public class MutableString implements Appendable, CharSequence {
         return index;
     }
 
-    public MutableString replace(final int from, final int to, CharSequence with) throws
-            IndexOutOfBoundsException {
-        if (from < 0)
-            throw new IndexOutOfBoundsException(from);
-        if (to < 0)
-            throw new IndexOutOfBoundsException(to);
-        if (from > to)
-            throw new IndexOutOfBoundsException(from);
-        if (to > index)
-            throw new IndexOutOfBoundsException(to);
-        if (with == null)
-            with = NULL;
+//    public MutableString replace(int from, int to, CharSequence with) throws IndexOutOfBoundsException {
+//        if (from < 0 || from > to) {
+//            throw new IndexOutOfBoundsException("from is out of bounds {" + from + "}");
+//        }
+//        if (to > index) {
+//            throw new IndexOutOfBoundsException("to is out of bounds {" + to + "}");
+//        }
+//        if (with == null) {
+//            with = NULL;
+//        }
+//
+//        int move = with.length() - (to - from);
+//        if (move != 0) {
+//            if (move > 0) {
+//                ensureCapacity(index + move);
+//                for (int i = index, k = move; k > 0; i--, k--) {
+//                    chars[i] = chars[i - 1];
+//                }
+//            }
+//            else if (index - to >= 0) {
+//                System.arraycopy(chars, to, chars, to + move, index - to);
+//            }
+//            index += move;
+//        }
+//        for (int i = to; i < from; i++) {
+//            chars[i] = with.charAt(i - to);
+//        }
+//
+//        return this;
+//    }
 
-        final int move = with.length() - (to - from);
-        if (move != 0) {
-            if (move > 0) {
-                ensureCapacity(index + move);
-                for (int i = index, k = move; k > 0; i--, k--)
-                    chars[i] = chars[i - 1];
-            }
-            else if (index - to >= 0)
-                System.arraycopy(chars, to, chars, to + move, index - to);
-            index += move;
-        }
-        for (int i = to; i < from; i++)
-            chars[i] = with.charAt(i - to);
+//    public MutableString[] split(char c) {
+//        ArrayList<MutableString> split = new ArrayList<>();
+//        for (int i = 0, k = 0; i <= index; ) {
+//            if (i == index) {
+//                split.add(subSequence(k, i));
+//            }
+//            else if (chars[i] == c) {
+//                split.add(subSequence(k, i));
+//                k = ++i;
+//            }
+//            else {
+//                ++i;
+//            }
+//        }
+//        return split.toArray(new MutableString[split.size()]);
+//    }
 
-        return this;
-    }
-
-    public MutableString[] split(final char c) {
-        final ArrayList<MutableString> split = new ArrayList<>();
-        for (int i = 0, k = 0; i <= index; ) {
-            if (i == index)
-                split.add(subSequence(k, i));
-            else if (chars[i] == c) {
-                split.add(subSequence(k, i));
-                k = ++i;
-            }
-            else
-                ++i;
-        }
-        return split.toArray(new MutableString[split.size()]);
-    }
-
-    public boolean startsWith(final char c) {
-        return index > 0 && chars[0] == c;
-    }
+//    public boolean startsWith(char c) {
+//        return index > 0 && chars[0] == c;
+//    }
 
     @Override
-    public MutableString subSequence(final int start, final int end) throws IndexOutOfBoundsException {
+    @NotNull
+    public MutableString subSequence(int start, int end) throws IndexOutOfBoundsException {
         return new MutableString(this, start, end);
     }
 
-    public MutableString subSequence(final int start) throws IndexOutOfBoundsException {
-        return new MutableString(this, start, index);
-    }
-
-    public String subString(final int start, final int end) throws IndexOutOfBoundsException {
-        return String.copyValueOf(chars, start, end - start);
-    }
-
-    public String subString(final int start) throws IndexOutOfBoundsException {
-        return String.copyValueOf(chars, start, index - start);
-    }
+//    public MutableString subSequence(int start) throws IndexOutOfBoundsException {
+//        return new MutableString(this, start, index);
+//    }
+//
+//    public String subString(int start, int end) throws IndexOutOfBoundsException {
+//        return String.copyValueOf(chars, start, end - start);
+//    }
+//
+//    public String subString(int start) throws IndexOutOfBoundsException {
+//        return String.copyValueOf(chars, start, index - start);
+//    }
 
     @Override
+    @NotNull
     public String toString() {
         return String.copyValueOf(chars, 0, index);
     }
