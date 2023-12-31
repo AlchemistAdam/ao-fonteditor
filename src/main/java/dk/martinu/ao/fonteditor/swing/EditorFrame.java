@@ -1,7 +1,16 @@
 package dk.martinu.ao.fonteditor.swing;
 
+import dk.martinu.ao.client.text.Font;
+import dk.martinu.ao.client.text.FontCodec;
+import dk.martinu.ao.fonteditor.MutableFont;
+import dk.martinu.ao.fonteditor.MutableGlyph;
+import dk.martinu.ao.fonteditor.swing.EditorWizard.Option;
+import dk.martinu.ao.fonteditor.util.Log;
+import dk.martinu.kofi.*;
+import dk.martinu.kofi.codecs.KofiCodec;
 import org.jetbrains.annotations.*;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
@@ -12,18 +21,8 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.*;
 
-import javax.swing.*;
-
-import dk.martinu.ao.client.text.Font;
-import dk.martinu.ao.client.text.FontCodec;
-import dk.martinu.ao.fonteditor.MutableFont;
-import dk.martinu.ao.fonteditor.MutableGlyph;
-import dk.martinu.ao.fonteditor.swing.EditorWizard.Option;
-import dk.martinu.ao.fonteditor.util.Log;
-import dk.martinu.kofi.*;
-import dk.martinu.kofi.codecs.KofiCodec;
-
 import static dk.martinu.ao.fonteditor.swing.EditorWizard.Option.*;
+import static dk.martinu.ao.fonteditor.swing.GlyphCanvas.PROPERTY_DIRTY;
 import static dk.martinu.ao.fonteditor.swing.Tool.*;
 import static java.awt.BorderLayout.*;
 import static java.awt.Font.MONOSPACED;
@@ -162,7 +161,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     @NotNull
     private static Document readConfig() {
         if (Files.exists(DATATOOL_CONFIG_PATH)) {
-            final Document doc;
+            Document doc;
             try {
                 doc = KofiCodec.provider().readFile(DATATOOL_CONFIG_PATH);
             }
@@ -189,9 +188,10 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @throws IllegalStateException if {@code state} is {@code false}
      */
     @Contract(value = "false, _ -> fail", pure = true)
-    private static void requireState(final boolean state, @Nullable final String message) throws IllegalStateException {
-        if (!state)
+    private static void requireState(boolean state, @Nullable String message) throws IllegalStateException {
+        if (!state) {
             throw new IllegalStateException(message);
+        }
     }
 
     /**
@@ -272,15 +272,15 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @throws IllegalStateException if the current font is {@code null}
      * @see #setFont(MutableFont)
      */
-    public void addGlyph(@NotNull final MutableGlyph glyph) {
+    public void addGlyph(@NotNull MutableGlyph glyph) {
         Objects.requireNonNull(glyph, "glyph is null");
         requireState(mFont != null, "current font is null");
-        final int index = mFont.glyphList.size();
+        int index = mFont.glyphList.size();
         // add glyph to font and list model
         mFont.glyphList.add(index, glyph);
         glyphListModel.add(index, glyph);
         // make glyph selected
-        final JList<MutableGlyph> glyphList = getComponent(CK_GLYPH_LIST);
+        JList<MutableGlyph> glyphList = getComponent(CK_GLYPH_LIST);
         glyphList.setSelectedIndex(index);
         // display glyph on canvas
         showGlyphTab(glyph);
@@ -299,12 +299,12 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @see #setFont(MutableFont)
      */
     public void deleteSelection() {
-        final JList<MutableGlyph> list = getComponent(CK_GLYPH_LIST);
-        final List<MutableGlyph> glyphs = list.getSelectedValuesList();
+        JList<MutableGlyph> list = getComponent(CK_GLYPH_LIST);
+        List<MutableGlyph> glyphs = list.getSelectedValuesList();
         requireState(glyphs.size() != 0, "no glyphs are selected");
         requireState(mFont != null, "current font is null");
         // ask user to confirm
-        final Option option = wizard.showConfirmationDialog(
+        Option option = wizard.showConfirmationDialog(
                 "Confirm Delete",
                 "Are you sure you want to delete the current selection?",
                 CANCEL,
@@ -315,9 +315,11 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             mFont.isDirty = true;
             glyphs.forEach(glyph -> {
                 glyphListModel.removeElement(glyph);
-                for (int i = tabList.size() - 1; i >= 0; i--)
-                    if (tabList.get(i).canvas.glyph == glyph)
+                for (int i = tabList.size() - 1; i >= 0; i--) {
+                    if (tabList.get(i).canvas.glyph == glyph) {
                         tabList.get(i).close();
+                    }
+                }
             });
             getAction(ACTION_SAVE_FILE).setEnabled(true);
         }
@@ -326,7 +328,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     // DOC editFontProperties
     public void editFontProperties() {
         requireState(mFont != null, "current font is null");
-        final MutableFont edit = wizard.showFontDialog(mFont);
+        MutableFont edit = wizard.showFontDialog(mFont);
         if (edit != null && !mFont.equals(edit)) {
             boolean dirty = false;
 
@@ -341,10 +343,12 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
 
             if (dirty) {
                 mFont.isDirty = true;
-                if (!mFont.name.isBlank())
+                if (!mFont.name.isBlank()) {
                     setTitle(FRAME_TITLE + " - " + mFont.name);
-                else
+                }
+                else {
                     setTitle(FRAME_TITLE);
+                }
                 getAction(ACTION_SAVE_FILE).setEnabled(true);
                 // TODO update warnings for glyphs that are greater than font height
             }
@@ -354,20 +358,21 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     // DOC editGlyphProperties
     public void editGlyphProperties() {
         requireState(tab != null, "current glyph is null");
-        final MutableGlyph glyph = tab.canvas.glyph;
-        final MutableGlyph edit = wizard.showGlyphDialog(glyph);
+        MutableGlyph glyph = tab.canvas.glyph;
+        MutableGlyph edit = wizard.showGlyphDialog(glyph);
         if (edit != null && !glyph.equals(edit)) {
             boolean dirty = false;
 
-            final boolean newSize = glyph.width != edit.width || glyph.height != edit.height;
+            boolean newSize = glyph.width != edit.width || glyph.height != edit.height;
             if (newSize) {
                 // size of data that needs to be moved into new data array
-                final int dataWidth = Math.min(glyph.width, edit.width);
-                final int dataHeight = Math.min(glyph.height, edit.height);
+                int dataWidth = Math.min(glyph.width, edit.width);
+                int dataHeight = Math.min(glyph.height, edit.height);
                 // transfer previous glyph.data into new array
-                final byte[] data = new byte[edit.width * edit.height];
-                for (int y = 0; y < dataHeight; y++)
+                byte[] data = new byte[edit.width * edit.height];
+                for (int y = 0; y < dataHeight; y++) {
                     System.arraycopy(glyph.data, y * glyph.width, data, y * dataWidth, dataWidth);
+                }
                 glyph.width = edit.width;
                 glyph.height = edit.height;
                 glyph.data = data;
@@ -389,8 +394,9 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
 
             if (dirty) {
                 // only update image after ALL fields have been set
-                if (newSize)
+                if (newSize) {
                     tab.canvas.updateImage();
+                }
                 tab.canvas.repaint();
 //                tab.canvas.glyph.isDirty = true; // forwards to property listener and marks font as dirty
             }
@@ -402,7 +408,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     public void editHorizontalOffsets() {
         requireState(mFont != null, "current font is null");
         requireState(tab != null, "current glyph is null");
-        final int[] edit = wizard.showHorizontalOffsetsDialog(mFont, tab.canvas.glyph);
+        int[] edit = wizard.showHorizontalOffsetsDialog(mFont, tab.canvas.glyph);
         if (edit != null && !Arrays.equals(tab.canvas.glyph.offsetX, edit)) {
 
         }
@@ -418,12 +424,14 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      */
     @Contract(pure = true)
     @NotNull
-    public EditorAction getAction(@NotNull final String key) {
-        final EditorAction action = actionMap.get(Objects.requireNonNull(key, "key is null"));
-        if (action != null)
+    public EditorAction getAction(@NotNull String key) {
+        EditorAction action = actionMap.get(Objects.requireNonNull(key, "key is null"));
+        if (action != null) {
             return action;
-        else
+        }
+        else {
             throw new IllegalArgumentException("unknown action key {" + key + "}");
+        }
     }
 
     /**
@@ -437,13 +445,15 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      */
     @Contract(pure = true)
     @NotNull
-    public <T extends JComponent> T getComponent(@NotNull final String key) {
+    public <T extends JComponent> T getComponent(@NotNull String key) {
         //noinspection unchecked
-        final T component = (T) componentMap.get(Objects.requireNonNull(key, "key is null"));
-        if (component != null)
+        T component = (T) componentMap.get(Objects.requireNonNull(key, "key is null"));
+        if (component != null) {
             return component;
-        else
+        }
+        else {
             throw new IllegalArgumentException("unknown component key {" + key + "}");
+        }
     }
 
     /**
@@ -454,43 +464,46 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @throws IllegalStateException if the current font is {@code null}
      */
     // TEST moveListSelectionTo
-    public void moveListSelectionTo(final int index) {
+    public void moveListSelectionTo(int index) {
         requireState(mFont != null, "current font is null");
-        if (index < 0 || index >= mFont.glyphList.size())
+        if (index < 0 || index >= mFont.glyphList.size()) {
             throw new IndexOutOfBoundsException(index);
+        }
 
-        final JList<MutableGlyph> glyphList = getComponent(CK_GLYPH_LIST);
-        final int[] indices = glyphList.getSelectedIndices();
-        if (indices.length == 0 || indices[0] == index)
+        JList<MutableGlyph> glyphList = getComponent(CK_GLYPH_LIST);
+        int[] indices = glyphList.getSelectedIndices();
+        if (indices.length == 0 || indices[0] == index) {
             return;
+        }
         // offset to move selected glyphs by
-        final int offset = index - indices[0];
+        int offset = index - indices[0];
 
         // TODO swap consecutive indices in bulk to minimize number of events fired
         // map of old index keys mapped to new index values
-        final TreeMap<Integer, Integer> indexMap = new TreeMap<>();
+        TreeMap<Integer, Integer> indexMap = new TreeMap<>();
         // populate map and move selected glyphs
-        for (final int oldIndex : indices) {
-            final int newIndex = oldIndex + offset;
+        for (int oldIndex : indices) {
+            int newIndex = oldIndex + offset;
 
             indexMap.put(oldIndex, newIndex);
             // TODO determine new index for glyph at newIndex position
 //            indexMap.put(newIndex, oldIndex);
 
-            final MutableGlyph glyph = glyphListModel.get(oldIndex);
+            MutableGlyph glyph = glyphListModel.get(oldIndex);
             glyphListModel.remove(oldIndex);
             glyphListModel.add(newIndex, glyph);
         }
 
         // update indices in offsetX arrays of all glyphs
-        for (final MutableGlyph glyph : mFont.glyphList)
+        for (MutableGlyph glyph : mFont.glyphList) {
             for (int i = 0; i < glyph.offsetX.length; i += 2) {
-                final Integer newIndex = indexMap.get(glyph.offsetX[i]);
+                Integer newIndex = indexMap.get(glyph.offsetX[i]);
                 if (newIndex != null) {
                     glyph.offsetX[i] = newIndex;
 //                    glyph.isDirty = true;
                 }
             }
+        }
 
         mFont.isDirty = true;
         getAction(ACTION_SAVE_FILE).setEnabled(true);
@@ -498,20 +511,20 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
 
     // DOC propertyChange
     @Override
-    public void propertyChange(@NotNull final PropertyChangeEvent event) {
+    public void propertyChange(@NotNull PropertyChangeEvent event) {
         requireState(mFont != null, "current font is null");
-//        if (event.getPropertyName().equals(PROPERTY_DIRTY)) {
-//            final GlyphCanvas canvas = (GlyphCanvas) event.getSource();
-//            final int index = glyphListModel.indexOf(canvas.glyph);
-//            // force update in list to reflect dirty state
-//            glyphListModel.setElementAt(canvas.glyph, index);
-//
-//            final boolean isDirty = (boolean) event.getNewValue();
-//            if (isDirty) {
-//                mFont.isDirty = true;
-//                getAction(ACTION_SAVE_FILE).setEnabled(true);
-//            }
-//        }
+        if (event.getPropertyName().equals(PROPERTY_DIRTY)) {
+            GlyphCanvas canvas = (GlyphCanvas) event.getSource();
+            int index = glyphListModel.indexOf(canvas.glyph);
+            // force update in list to reflect dirty state
+            glyphListModel.setElementAt(canvas.glyph, index);
+
+            boolean isDirty = (boolean) event.getNewValue();
+            if (isDirty) {
+                mFont.isDirty = true;
+                getAction(ACTION_SAVE_FILE).setEnabled(true);
+            }
+        }
     }
 
     /**
@@ -525,18 +538,20 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @param saveAs the "save as" file to save to, or {@code null}
      * @throws IllegalStateException if the current font is {@code null}
      */
-    public void saveFont(@Nullable final File saveAs) {
+    public void saveFont(@Nullable File saveAs) {
         // TODO called when  closing, will drop saves on cancel, also add NO option
         requireState(mFont != null, "current font is null");
 
-        final File file;
-        if (saveAs != null)
+        File file;
+        if (saveAs != null) {
             file = saveAs;
+        }
         else {
-            final boolean hasFile = mFont.file != null;
+            boolean hasFile = mFont.file != null;
             file = hasFile ? mFont.file : wizard.showSaveFontFileDialog();
-            if (file == null)
+            if (file == null) {
                 return;
+            }
         }
 
         // FIX this will only save glyphs that are opened in tabs.
@@ -547,23 +562,25 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
 //            }
 //        }
 
-        final Font font = mFont.convertToFont();
+        Font font = mFont.convertToFont();
         boolean saved = false;
-        while (!saved)
+        while (!saved) {
             try {
                 FontCodec.writeFile(font, file);
                 saved = true;
             }
             catch (IOException e) {
                 Log.e("could not save font", e);
-                final Option op = wizard.showConfirmationDialog(
+                Option op = wizard.showConfirmationDialog(
                         "Error",
                         "An error occurred while saving the font. Do you want to try again?",
                         YES,
                         YES, CANCEL);
-                if (op == CANCEL)
+                if (op == CANCEL) {
                     return;
+                }
             }
+        }
 
         for (GlyphTab tab : tabList) {
 //            if (tab.canvas.isDirty) {
@@ -586,9 +603,10 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @throws IllegalArgumentException if {@code alpha}
      */
     @Contract(mutates = "this")
-    public void setAlpha(final int alpha) {
-        if (alpha < 0 || alpha > 255)
+    public void setAlpha(int alpha) {
+        if (alpha < 0 || alpha > 255) {
             throw new IllegalArgumentException("invalid alpha value");
+        }
         if (alpha != rgba[3]) {
             alphaSliderModel.setValue(alpha); // updating slider will forward new value to alpha box and spinner
             firePropertyChange(PROPERTY_TOOL_COLOR,
@@ -604,50 +622,56 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      *
      * @param newFont the new font, or {@code null}
      */
-    public void setFont(@Nullable final MutableFont newFont) {
-        if (this.mFont == newFont)
+    public void setFont(@Nullable MutableFont newFont) {
+        if (this.mFont == newFont) {
             return;
+        }
 
         // ask user to save current font if dirty
         if (mFont != null && mFont.isDirty) {
-            final Option saveOp = wizard.showConfirmationDialog(
+            Option saveOp = wizard.showConfirmationDialog(
                     "Unsaved Changes",
                     "The current font has unsaved changes. Do you wish to "
                             + "save the current font before proceeding?",
                     CANCEL,
                     YES, NO, CANCEL);
             if (saveOp == YES) {
-                final File file = mFont.file != null ? mFont.file : wizard.showSaveFontFileDialog();
-                if (file == null)
+                File file = mFont.file != null ? mFont.file : wizard.showSaveFontFileDialog();
+                if (file == null) {
                     return;
-                final Font font = mFont.convertToFont();
+                }
+                Font font = mFont.convertToFont();
                 boolean saved = false;
-                while (!saved)
+                while (!saved) {
                     try {
                         FontCodec.writeFile(font, file);
                         saved = true;
                     }
                     catch (IOException e) {
                         Log.e("could not save font", e);
-                        final Option retryOp = wizard.showConfirmationDialog(
+                        Option retryOp = wizard.showConfirmationDialog(
                                 "Error",
                                 "An error occurred while saving the font. Do you want to try again?",
                                 YES,
                                 YES, NO, CANCEL);
-                        if (retryOp == NO)
+                        if (retryOp == NO) {
                             break;
-                        if (retryOp == CANCEL)
+                        }
+                        if (retryOp == CANCEL) {
                             return;
+                        }
                     }
+                }
             }
-            else if (saveOp == CANCEL)
+            else if (saveOp == CANCEL) {
                 return;
+            }
         }
 
         // TODO ensure this will forward to selection listener and update move-to actions
         glyphListModel.clear();
 
-        final boolean hasFont = newFont != null;
+        boolean hasFont = newFont != null;
 
         getAction(ACTION_NEW_GLYPH).setEnabled(hasFont);
         getAction(ACTION_IMPORT_GLYPH).setEnabled(hasFont);
@@ -667,14 +691,17 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         tabList.clear();
 
         if (newFont != null) {
-            if (!newFont.name.isBlank())
+            if (!newFont.name.isBlank()) {
                 setTitle(FRAME_TITLE + " - " + newFont.name);
-            else
+            }
+            else {
                 setTitle(FRAME_TITLE);
+            }
             glyphListModel.addAll(newFont.glyphList);
             // TODO add project to recent list
-            if (newFont.file != null)
+            if (newFont.file != null) {
                 config.addString("editor", "file", newFont.file.getAbsolutePath());
+            }
         }
         else {
             setTitle(FRAME_TITLE);
@@ -693,13 +720,14 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @throws NullPointerException if {@code color} is {@code null}
      */
     @Contract(mutates = "this")
-    public void setFontColor(@NotNull final Color color) {
+    public void setFontColor(@NotNull Color color) {
         Objects.requireNonNull(color, "fontColor is null");
-        final int[] rgb = Util.getRGB(color, new int[3]);
-        if (rgb[0] != rgba[0] || rgb[1] != rgba[1] || rgb[2] != rgba[2])
+        int[] rgb = Util.getRGB(color, new int[3]);
+        if (rgb[0] != rgba[0] || rgb[1] != rgba[1] || rgb[2] != rgba[2]) {
             firePropertyChange(PROPERTY_FONT_COLOR,
                     new Color(rgba[0], rgba[1], rgba[2], 255),
                     new Color(rgba[0] = rgb[0], rgba[1] = rgb[1], rgba[2] = rgb[2], 255));
+        }
     }
 
     /**
@@ -709,17 +737,22 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @throws NullPointerException  if {@code tool} is {@code null}
      * @throws IllegalStateException if the current glyph is {@code null}
      */
-    public void setTool(@NotNull final Tool tool) {
+    public void setTool(@NotNull Tool tool) {
         Objects.requireNonNull(tool, "tool is null");
-        final Tool oldTool = this.tool;
+        Tool oldTool = this.tool;
         if (tool != this.tool) {
             switch (tool) {
                 case MOVE -> toolGroup.clearSelection();
-                case SELECT -> toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_SELECT)).getModel(), true);
-                case PENCIL -> toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_PENCIL)).getModel(), true);
-                case ERASER -> toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_ERASER)).getModel(), true);
-                case PICKER -> toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_PICKER)).getModel(), true);
-                case ZOOM -> toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_ZOOM)).getModel(), true);
+                case SELECT ->
+                        toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_SELECT)).getModel(), true);
+                case PENCIL ->
+                        toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_PENCIL)).getModel(), true);
+                case ERASER ->
+                        toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_ERASER)).getModel(), true);
+                case PICKER ->
+                        toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_PICKER)).getModel(), true);
+                case ZOOM ->
+                        toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_ZOOM)).getModel(), true);
             }
             this.tool = tool;
         }
@@ -727,8 +760,20 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             toolGroup.clearSelection();
             this.tool = MOVE;
         }
-        if (oldTool != this.tool)
+        if (oldTool != this.tool) {
             firePropertyChange(PROPERTY_TOOL, oldTool, this.tool);
+        }
+    }
+
+    /**
+     * Internal helper method to expose the current color component values used
+     * by the editor. The values are in range 0-255 inclusive and ordered as
+     * red, green, blue, alpha.
+     *
+     * @return and array of the color components
+     */
+    int[] getRGBA() {
+        return rgba;
     }
 
     /**
@@ -793,6 +838,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
                 KeyStroke.getKeyStroke(KeyEvent.VK_S, CTRL_DOWN_MASK | SHIFT_DOWN_MASK, true),
                 event -> wizard.showSettingsDialog()
         ));
+        // TODO remove key accelerator
         actionMap.put(ACTION_EXIT, new EditorAction(
                 "Exit",
                 true,
@@ -810,7 +856,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
                 KeyEvent.VK_E,
                 KeyStroke.getKeyStroke(KeyEvent.VK_E, CTRL_DOWN_MASK, true),
                 event -> {
-                    final JList<MutableGlyph> glyphList = getComponent(CK_GLYPH_LIST);
+                    JList<MutableGlyph> glyphList = getComponent(CK_GLYPH_LIST);
                     showGlyphTab(glyphList.getSelectedValue());
                 }
         ));
@@ -870,9 +916,10 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
                 false,
                 event -> {
                     assert mFont != null;
-                    final int index = wizard.showMoveIndexDialog(mFont.glyphList.size());
-                    if (index != -1)
+                    int index = wizard.showMoveIndexDialog(mFont.glyphList.size());
+                    if (index != -1) {
                         moveListSelectionTo(index);
+                    }
                 }
         ));
         actionMap.put(ACTION_TOOL_MOVE, new EditorAction(
@@ -916,33 +963,33 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
 
         ////// DECLARATIONS //////
 
-        final JPanel contentPane = new JPanel(new BorderLayout());
-        final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        JPanel contentPane = new JPanel(new BorderLayout());
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 
-        final JScrollPane glyphPane = new JScrollPane();
-        final JList<MutableGlyph> glyphList = new JList<>(glyphListModel);
+        JScrollPane glyphPane = new JScrollPane();
+        JList<MutableGlyph> glyphList = new JList<>(glyphListModel);
 
-        final JTabbedPane tabbedPane = new JTabbedPane();
+        JTabbedPane tabbedPane = new JTabbedPane();
 
-        final JToolBar toolBar = new JToolBar(JToolBar.HORIZONTAL);
-        final JButton bMoveToTop = new JButton(getAction(ACTION_MOVE_TO_TOP));
-        final JButton bMoveUp = new JButton(getAction(ACTION_MOVE_UP));
-        final JButton bMoveDown = new JButton(getAction(ACTION_MOVE_DOWN));
-        final JButton bMoveToBottom = new JButton(getAction(ACTION_MOVE_TO_BOTTOM));
-        final JButton bMoveTo = new JButton(getAction(ACTION_MOVE_TO));
-        final JToggleButton bToolSelect = new JToggleButton(getAction(ACTION_TOOL_SELECT));
-        final JToggleButton bToolPencil = new JToggleButton(getAction(ACTION_TOOL_PENCIL));
-        final JToggleButton bToolEraser = new JToggleButton(getAction(ACTION_TOOL_ERASER));
-        final JToggleButton bToolPicker = new JToggleButton(getAction(ACTION_TOOL_PICKER));
-        final JToggleButton bToolZoom = new JToggleButton(getAction(ACTION_TOOL_ZOOM));
-        final AlphaBox alphaBox = new AlphaBox();
-        final JSlider alphaSlider = new JSlider(alphaSliderModel);
-        final JSpinner alphaSpinner = new JSpinner(alphaSpinnerModel);
+        JToolBar toolBar = new JToolBar(JToolBar.HORIZONTAL);
+        JButton bMoveToTop = new JButton(getAction(ACTION_MOVE_TO_TOP));
+        JButton bMoveUp = new JButton(getAction(ACTION_MOVE_UP));
+        JButton bMoveDown = new JButton(getAction(ACTION_MOVE_DOWN));
+        JButton bMoveToBottom = new JButton(getAction(ACTION_MOVE_TO_BOTTOM));
+        JButton bMoveTo = new JButton(getAction(ACTION_MOVE_TO));
+        JToggleButton bToolSelect = new JToggleButton(getAction(ACTION_TOOL_SELECT));
+        JToggleButton bToolPencil = new JToggleButton(getAction(ACTION_TOOL_PENCIL));
+        JToggleButton bToolEraser = new JToggleButton(getAction(ACTION_TOOL_ERASER));
+        JToggleButton bToolPicker = new JToggleButton(getAction(ACTION_TOOL_PICKER));
+        JToggleButton bToolZoom = new JToggleButton(getAction(ACTION_TOOL_ZOOM));
+        AlphaBox alphaBox = new AlphaBox();
+        JSlider alphaSlider = new JSlider(alphaSliderModel);
+        JSpinner alphaSpinner = new JSpinner(alphaSpinnerModel);
 
-        final JMenuBar menuBar = new JMenuBar();
-        final JMenu mFile = new JMenu("File");
-        final JMenu mEdit = new JMenu("Edit");
-        final JMenu mView = new JMenu("View");
+        JMenuBar menuBar = new JMenuBar();
+        JMenu mFile = new JMenu("File");
+        JMenu mEdit = new JMenu("Edit");
+        JMenu mView = new JMenu("View");
 
 
         ////// INITIALIZATION //////
@@ -952,19 +999,20 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         glyphList.setFont(new java.awt.Font(MONOSPACED, PLAIN, 14));
         glyphList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
-            public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index,
-                    final boolean isSelected, final boolean cellHasFocus) {
-                final MutableGlyph glyph = (MutableGlyph) value;
-                final JLabel label =
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                    boolean isSelected, boolean cellHasFocus) {
+                MutableGlyph glyph = (MutableGlyph) value;
+                JLabel label =
                         (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-//                label.setText(index + ": " + (glyph.isDirty ? "*" + glyph.name : glyph.name));
+                label.setText(index + ": " + (glyph.isDirty ? "*" + glyph.name : glyph.name));
                 return label;
             }
         });
         glyphList.addListSelectionListener(event -> {
-            if (event.getValueIsAdjusting())
+            if (event.getValueIsAdjusting()) {
                 return;
-            final boolean hasSelection = !glyphList.isSelectionEmpty();
+            }
+            boolean hasSelection = !glyphList.isSelectionEmpty();
             getAction(ACTION_MOVE_TO_TOP).setEnabled(hasSelection);
             getAction(ACTION_MOVE_UP).setEnabled(hasSelection);
             getAction(ACTION_MOVE_DOWN).setEnabled(hasSelection);
@@ -975,12 +1023,13 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         });
         glyphList.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(final MouseEvent event) {
+            public void mouseClicked(MouseEvent event) {
                 // displays glyph on double click
                 if (SwingUtilities.isLeftMouseButton(event) && event.getClickCount() == 2) {
-                    final MutableGlyph glyph = glyphList.getSelectedValue();
-                    if (glyph != null)
+                    MutableGlyph glyph = glyphList.getSelectedValue();
+                    if (glyph != null) {
                         showGlyphTab(glyph);
+                    }
                 }
             }
         });
@@ -993,9 +1042,9 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         tabbedPane.setName(CK_TABBED_PANE);
         tabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         tabbedPane.addChangeListener(event -> {
-            final int index = tabbedPane.getSelectedIndex();
+            int index = tabbedPane.getSelectedIndex();
             tab = index != -1 ? tabList.get(index) : null;
-            final boolean hasTab = tabbedPane.getTabCount() != 0;
+            boolean hasTab = tabbedPane.getTabCount() != 0;
             getAction(ACTION_EDIT_HORIZONTAL_OFFSETS).setEnabled(hasTab);
             getAction(ACTION_EDIT_GLYPH_PROPERTIES).setEnabled(hasTab);
             getAction(ACTION_TOOL_SELECT).setEnabled(hasTab);
@@ -1003,8 +1052,9 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             getAction(ACTION_TOOL_ERASER).setEnabled(hasTab);
             getAction(ACTION_TOOL_PICKER).setEnabled(hasTab);
             getAction(ACTION_TOOL_ZOOM).setEnabled(hasTab);
-            if (!hasTab)
+            if (!hasTab) {
                 setTool(MOVE);
+            }
         });
 
         componentMap.put(CK_B_TOOL_SELECT, bToolSelect);
@@ -1039,20 +1089,21 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         alphaSlider.setMaximumSize(alphaSlider.getPreferredSize());
 
         alphaSliderModel.addChangeListener(event -> {
-            final int value = alphaSliderModel.getValue();
+            int value = alphaSliderModel.getValue();
             if (value != alphaSpinnerModel.getNumber().intValue()) {
                 alphaSpinnerModel.setValue(value);
                 alphaBox.setAlphaImpl(value);
             }
-            if (!alphaSliderModel.getValueIsAdjusting())
+            if (!alphaSliderModel.getValueIsAdjusting()) {
                 setAlpha(value);
+            }
         });
 
         componentMap.put(CK_ALPHA_SPINNER, alphaSpinner);
         alphaSpinner.setName(CK_ALPHA_SPINNER);
         alphaSpinner.setMaximumSize(alphaSpinner.getPreferredSize());
         alphaSpinnerModel.addChangeListener(event -> {
-            final int value = alphaSpinnerModel.getNumber().intValue();
+            int value = alphaSpinnerModel.getNumber().intValue();
             if (value != alphaSliderModel.getValue()) {
                 alphaSliderModel.setValue(value);
                 alphaBox.setAlphaImpl(value);
@@ -1144,25 +1195,28 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         setIconImages(List.of(new ImageIcon("res/images/app_icon.png").getImage()));
         addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosing(final WindowEvent event) {
-                final Option exitOption = wizard.showConfirmationDialog(
+            public void windowClosing(WindowEvent event) {
+                Option exitOption = wizard.showConfirmationDialog(
                         "Confirm Exit",
                         "Are you sure you want to exit?",
                         CANCEL,
                         YES, CANCEL);
-                if (exitOption != YES)
+                if (exitOption != YES) {
                     return;
+                }
 
                 if (mFont != null && mFont.isDirty) {
-                    final Option saveOption = wizard.showConfirmationDialog(
+                    Option saveOption = wizard.showConfirmationDialog(
                             "Confirm Save",
                             "Do you want to save the file before closing?",
                             YES,
                             YES, NO, CANCEL);
-                    if (saveOption == CANCEL)
+                    if (saveOption == CANCEL) {
                         return;
-                    else if (saveOption == YES)
+                    }
+                    else if (saveOption == YES) {
                         saveFont(null);
+                    }
                 }
 
                 savePreferences();
@@ -1183,7 +1237,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
 
         // setup actions for non-menu key shortcuts
         {
-            final ActionMap actionMap = contentPane.getActionMap();
+            ActionMap actionMap = contentPane.getActionMap();
             actionMap.put(ACTION_TOOL_MOVE, getAction(ACTION_TOOL_MOVE));
             actionMap.put(ACTION_TOOL_SELECT, getAction(ACTION_TOOL_SELECT));
             actionMap.put(ACTION_TOOL_PENCIL, getAction(ACTION_TOOL_PENCIL));
@@ -1191,7 +1245,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             actionMap.put(ACTION_TOOL_PICKER, getAction(ACTION_TOOL_PICKER));
             actionMap.put(ACTION_TOOL_ZOOM, getAction(ACTION_TOOL_ZOOM));
 
-            final InputMap inputMap = contentPane.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+            InputMap inputMap = contentPane.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
             inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_M, 0), ACTION_TOOL_MOVE);
             inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0), ACTION_TOOL_SELECT);
             inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_P, 0), ACTION_TOOL_PENCIL);
@@ -1209,10 +1263,12 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @return the index of the tab, or {@code -1}
      */
     @Contract(pure = true)
-    protected int getTabIndex(@NotNull final MutableGlyph glyph) {
-        for (int i = 0; i < tabList.size(); i++)
-            if (glyph == tabList.get(i).canvas.glyph)
+    protected int getTabIndex(@NotNull MutableGlyph glyph) {
+        for (int i = 0; i < tabList.size(); i++) {
+            if (glyph == tabList.get(i).canvas.glyph) {
                 return i;
+            }
+        }
         return -1;
     }
 
@@ -1224,7 +1280,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     protected void loadPreferences() {
         config.acceptObject("editor", "bounds", obj -> {
             try {
-                final Rectangle bounds = obj.construct(Rectangle.class);
+                Rectangle bounds = obj.construct(Rectangle.class);
                 setBounds(bounds);
                 Log.i("bounds set to " + bounds);
             }
@@ -1258,17 +1314,21 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * document.
      */
     protected void savePreferences() {
-        final int state = getExtendedState();
+        int state = getExtendedState();
         // frame bounds
-        if (state != MAXIMIZED_BOTH)
+        if (state != MAXIMIZED_BOTH) {
             config.addObject("editor", "bounds", KofiObject.reflect(getBounds()));
-        else
+        }
+        else {
             config.removeProperty("editor", "bounds");
+        }
         // extended state
-        if (state != ICONIFIED)
+        if (state != ICONIFIED) {
             config.addInt("editor", "state", state);
-        else
+        }
+        else {
             config.removeProperty("editor", "state");
+        }
 
         // divider size
         config.addInt("editor", "dividerSize",
@@ -1278,11 +1338,13 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
                 ((JSplitPane) getComponent(CK_SPLIT_PANE)).getDividerLocation());
 
         // wizard file chooser directory
-        final String dir = wizard.getDirectory();
-        if (dir != null)
+        String dir = wizard.getDirectory();
+        if (dir != null) {
             config.addString("editor", "dir", dir);
-        else
+        }
+        else {
             config.removeProperty("editor", "dir");
+        }
     }
 
     /**
@@ -1294,18 +1356,19 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
      * @param glyph the glyph to show
      * @see GlyphCanvas
      */
-    protected void showGlyphTab(@NotNull final MutableGlyph glyph) {
-        final JTabbedPane tabbedPane = getComponent(CK_TABBED_PANE);
-        final int tabIndex = getTabIndex(glyph);
+    protected void showGlyphTab(@NotNull MutableGlyph glyph) {
+        JTabbedPane tabbedPane = getComponent(CK_TABBED_PANE);
+        int tabIndex = getTabIndex(glyph);
         // select existing tab if possible
         if (tabIndex != -1) {
-            if (tabbedPane.getSelectedIndex() != tabIndex)
+            if (tabbedPane.getSelectedIndex() != tabIndex) {
                 tabbedPane.setSelectedIndex(tabIndex);
+            }
         }
         // create and select new tab
         else {
-            final int i = tabbedPane.getTabCount();
-            final GlyphTab tab = new GlyphTab(glyph);
+            int i = tabbedPane.getTabCount();
+            GlyphTab tab = new GlyphTab(glyph);
             tabList.add(i, tab); // add to list first, or ChangeListener on tabbedPane will throw
             tabbedPane.insertTab(null, null, tab.canvas, null, i);
             tabbedPane.setTabComponentAt(i, tab);
@@ -1313,17 +1376,6 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             // center AFTER canvas is added to pane; it must be laid out
             tab.canvas.centerImage();
         }
-    }
-
-    /**
-     * Internal helper method to expose the current color component values used
-     * by the editor. The values are in range 0-255 inclusive and ordered as
-     * red, green, blue, alpha.
-     *
-     * @return and array of the color components
-     */
-    int[] getRGBA() {
-        return rgba;
     }
 
     // DOC GlyphTab
@@ -1336,14 +1388,14 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         @NotNull
         protected final JButton bClose;
 
-        public GlyphTab(@NotNull final MutableGlyph glyph) {
+        public GlyphTab(@NotNull MutableGlyph glyph) {
             super(new BorderLayout());
             Objects.requireNonNull(glyph, "glyph is null");
 
             canvas = new GlyphCanvas(EditorFrame.this, glyph);
             // notify editor and tab when canvas becomes dirty
-//            canvas.addPropertyChangeListener(PROPERTY_DIRTY, EditorFrame.this);
-//            canvas.addPropertyChangeListener(PROPERTY_DIRTY, this);
+            canvas.addPropertyChangeListener(PROPERTY_DIRTY, EditorFrame.this);
+            canvas.addPropertyChangeListener(PROPERTY_DIRTY, this);
 
             titleLabel = new JLabel(/*glyph.isDirty ? "*" + glyph.name : glyph.name*/);
             bClose = new JButton(new ImageIcon("res/image/icon/close.png"));
@@ -1366,22 +1418,22 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         }
 
         public void close() {
-            final int tabIndex = getTabIndex(canvas.glyph);
+            int tabIndex = getTabIndex(canvas.glyph);
             tabList.remove(tabIndex);
-            final JTabbedPane tabbedPane = EditorFrame.this.getComponent(CK_TABBED_PANE);
+            JTabbedPane tabbedPane = EditorFrame.this.getComponent(CK_TABBED_PANE);
             tabbedPane.remove(canvas);
-//            canvas.removePropertyChangeListener(PROPERTY_DIRTY, EditorFrame.this);
-//            canvas.removePropertyChangeListener(PROPERTY_DIRTY, this);
+            canvas.removePropertyChangeListener(PROPERTY_DIRTY, EditorFrame.this);
+            canvas.removePropertyChangeListener(PROPERTY_DIRTY, this);
             EditorFrame.this.removePropertyChangeListener(PROPERTY_TOOL_COLOR, canvas);
             EditorFrame.this.removePropertyChangeListener(PROPERTY_TOOL, canvas);
         }
 
         @Override
-        public void propertyChange(@NotNull final PropertyChangeEvent event) {
-//            if (event.getPropertyName().equals(PROPERTY_DIRTY)) {
-//                final boolean isDirty = (boolean) event.getNewValue();
-//                titleLabel.setText(isDirty ? "*" + canvas.glyph.name : canvas.glyph.name);
-//            }
+        public void propertyChange(@NotNull PropertyChangeEvent event) {
+            if (event.getPropertyName().equals(PROPERTY_DIRTY)) {
+                boolean isDirty = (boolean) event.getNewValue();
+                titleLabel.setText(isDirty ? "*" + canvas.glyph.name : canvas.glyph.name);
+            }
         }
     }
 }
