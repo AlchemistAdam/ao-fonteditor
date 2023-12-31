@@ -1377,16 +1377,16 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     }
 
     // DOC GlyphTab
-    protected class GlyphTab extends JPanel implements PropertyChangeListener {
+    private final class GlyphTab extends JPanel implements PropertyChangeListener {
 
         @NotNull
-        public final GlyphCanvas canvas;
+        final GlyphCanvas canvas;
         @NotNull
-        protected final JLabel titleLabel;
+        final JLabel titleLabel;
         @NotNull
-        protected final JButton bClose;
+        final JButton bClose;
 
-        public GlyphTab(@NotNull MutableGlyph glyph) {
+        GlyphTab(@NotNull MutableGlyph glyph) {
             super(new BorderLayout());
             Objects.requireNonNull(glyph, "glyph is null");
 
@@ -1406,25 +1406,15 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             bClose.setBorderPainted(false);
             bClose.setFocusPainted(false);
             bClose.setOpaque(false);
-            bClose.setPreferredSize(new Dimension(9, 9));
-            bClose.setPressedIcon(new ImageIcon("res/image/icon/close_active.png"));
+            bClose.setPreferredSize(new Dimension(19,19));
+            bClose.setIcon(new ImageIcon("res/images/icon/close.png"));
+            bClose.setPressedIcon(new ImageIcon("res/images/icon/close_active.png"));
             bClose.setRolloverEnabled(true);
-            bClose.setRolloverIcon(new ImageIcon("res/image/icon/close_active.png"));
+            bClose.setRolloverIcon(new ImageIcon("res/images/icon/close_active.png"));
             bClose.addActionListener(event -> close());
 
             add(titleLabel, CENTER);
             add(bClose, EAST);
-        }
-
-        public void close() {
-            int tabIndex = getTabIndex(canvas.glyph);
-            tabList.remove(tabIndex);
-            JTabbedPane tabbedPane = EditorFrame.this.getComponent(CK_TABBED_PANE);
-            tabbedPane.remove(canvas);
-            canvas.removePropertyChangeListener(PROPERTY_DIRTY, EditorFrame.this);
-            canvas.removePropertyChangeListener(PROPERTY_DIRTY, this);
-            EditorFrame.this.removePropertyChangeListener(PROPERTY_TOOL_COLOR, canvas);
-            EditorFrame.this.removePropertyChangeListener(PROPERTY_TOOL, canvas);
         }
 
         @Override
@@ -1433,6 +1423,17 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
                 boolean isDirty = (boolean) event.getNewValue();
                 titleLabel.setText(isDirty ? "*" + canvas.glyph.name : canvas.glyph.name);
             }
+        }
+
+        void close() {
+            int tabIndex = getTabIndex(canvas.glyph);
+            tabList.remove(tabIndex);
+            JTabbedPane tabbedPane = EditorFrame.this.getComponent(CK_TABBED_PANE);
+            tabbedPane.remove(canvas);
+            canvas.removePropertyChangeListener(PROPERTY_DIRTY, EditorFrame.this);
+            canvas.removePropertyChangeListener(PROPERTY_DIRTY, this);
+            EditorFrame.this.removePropertyChangeListener(PROPERTY_TOOL_COLOR, canvas);
+            EditorFrame.this.removePropertyChangeListener(PROPERTY_TOOL, canvas);
         }
     }
 }
