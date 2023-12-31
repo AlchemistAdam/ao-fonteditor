@@ -301,7 +301,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     public void deleteSelection() {
         JList<MutableGlyph> list = getComponent(CK_GLYPH_LIST);
         List<MutableGlyph> glyphs = list.getSelectedValuesList();
-        requireState(glyphs.size() != 0, "no glyphs are selected");
+        requireState(!glyphs.isEmpty(), "no glyphs are selected");
         requireState(mFont != null, "current font is null");
         // ask user to confirm
         Option option = wizard.showConfirmationDialog(
@@ -332,7 +332,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         if (edit != null && !mFont.equals(edit)) {
             boolean dirty = false;
 
-            if (mFont.name != edit.name) {
+            if (!mFont.name.equals(edit.name)) {
                 mFont.name = edit.name;
                 dirty = true;
             }
@@ -1226,7 +1226,6 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
                 }
                 catch (Exception e) {
                     Log.e("could not save editor configuration", e);
-                    e.printStackTrace();
                 }
             }
         });
@@ -1286,7 +1285,6 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             }
             catch (Exception e) {
                 Log.e("could not set bounds from config", e);
-                e.printStackTrace();
             }
         });
         config.acceptInt("editor", "state", state -> {
@@ -1396,8 +1394,9 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             // notify editor and tab when canvas becomes dirty
             canvas.addPropertyChangeListener(PROPERTY_DIRTY, EditorFrame.this);
             canvas.addPropertyChangeListener(PROPERTY_DIRTY, this);
+            canvas.setTool(tool);
 
-            titleLabel = new JLabel(/*glyph.isDirty ? "*" + glyph.name : glyph.name*/);
+            titleLabel = new JLabel(glyph.isDirty ? "*" + glyph.name : glyph.name);
             bClose = new JButton(new ImageIcon("res/image/icon/close.png"));
 
             titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
