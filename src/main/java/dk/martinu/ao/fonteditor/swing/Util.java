@@ -37,18 +37,6 @@ public class Util {
         return array;
     }
 
-//    @Contract(value = "_ -> new", pure = true)
-//    @NotNull
-//    public static String join(@NotNull final List<String> strings) {
-//        final StringBuilder sb = new StringBuilder(32);
-//        if (strings.size() > 0) {
-//            sb.append(strings.get(0));
-//            for (int i = 1; i < strings.size(); i++)
-//                sb.append(", ").append(strings.get(i));
-//        }
-//        return sb.toString();
-//    }
-
     @Contract(value = "_, _ -> new", pure = true)
     @NotNull
     public static Dimension union(@NotNull final Dimension d0, @NotNull final Dimension d1) throws NullPointerException {
