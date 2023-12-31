@@ -366,6 +366,24 @@ public class GlyphCanvas extends JComponent implements PropertyChangeListener {
     }
 
     /**
+     * Updates the canvas image and backdrop. Call this method if the glyph
+     * size has changed.
+     * <p>
+     * <b>NOTE:</b> calling this method will not schedule the canvas to be
+     * repainted, and must be done by the caller after all changes to the
+     * canvas have been made.
+     */
+    void updateImage() {
+        BufferedImage image = new BufferedImage(glyph.width, glyph.height, BufferedImage.TYPE_INT_ARGB);
+        int width = Math.min(glyph.width, this.image.getWidth());
+        int height = Math.min(glyph.height, this.image.getHeight());
+        image.getRaster().setDataElements(0, 0, width, height,
+                this.image.getRaster().getDataElements(0, 0, width, height, null));
+        this.image = image;
+        backdrop = ImageUtil.getBackdropImage(glyph.width, glyph.height);
+    }
+
+    /**
      * Renders the glyph to the canvas image using the current
      * {@link #rgba color}. If the glyph is whitespace, then the image will
      * have all color components set to {@code 0}.
@@ -402,23 +420,6 @@ public class GlyphCanvas extends JComponent implements PropertyChangeListener {
         int len = width * height;
         int[] samples = image.getRaster().getSamples(0, 0, width, height, 3, new int[len]);
         for (int i = 0; i < len; i++) { glyph.data[i] = (byte) samples[i]; }
-    }
-
-    /**
-     * Updates the canvas image and backdrop. Call this method if the glyph
-     * size has changed.
-     * <p>
-     * <b>NOTE:</b> calling this method will not schedule the canvas to be
-     * repainted.
-     */
-    private void updateImage() {
-        BufferedImage image = new BufferedImage(glyph.width, glyph.height, BufferedImage.TYPE_INT_ARGB);
-        int width = Math.min(glyph.width, this.image.getWidth());
-        int height = Math.min(glyph.height, this.image.getHeight());
-        image.getRaster().setDataElements(0, 0, width, height,
-                this.image.getRaster().getDataElements(0, 0, width, height, null));
-        this.image = image;
-        backdrop = ImageUtil.getBackdropImage(glyph.width, glyph.height);
     }
 
     /**
