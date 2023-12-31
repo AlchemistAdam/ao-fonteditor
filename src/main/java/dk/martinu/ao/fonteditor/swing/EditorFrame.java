@@ -1002,8 +1002,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
                     boolean isSelected, boolean cellHasFocus) {
                 MutableGlyph glyph = (MutableGlyph) value;
-                JLabel label =
-                        (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 label.setText(index + ": " + (glyph.isDirty ? "*" + glyph.name : glyph.name));
                 return label;
             }
@@ -1012,11 +1011,22 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             if (event.getValueIsAdjusting()) {
                 return;
             }
-            boolean hasSelection = !glyphList.isSelectionEmpty();
-            getAction(ACTION_MOVE_TO_TOP).setEnabled(hasSelection);
-            getAction(ACTION_MOVE_UP).setEnabled(hasSelection);
-            getAction(ACTION_MOVE_DOWN).setEnabled(hasSelection);
-            getAction(ACTION_MOVE_TO_BOTTOM).setEnabled(hasSelection);
+            ListSelectionModel model = glyphList.getSelectionModel();
+            boolean hasSelection = !model.isSelectionEmpty();
+            if (hasSelection) {
+                boolean canMoveUp = model.getMinSelectionIndex() != 0;
+                boolean canMoveDown = model.getMaxSelectionIndex() != glyphListModel.size() - 1;
+                getAction(ACTION_MOVE_TO_TOP).setEnabled(canMoveUp);
+                getAction(ACTION_MOVE_UP).setEnabled(canMoveUp);
+                getAction(ACTION_MOVE_DOWN).setEnabled(canMoveDown);
+                getAction(ACTION_MOVE_TO_BOTTOM).setEnabled(canMoveDown);
+            }
+            else {
+                getAction(ACTION_MOVE_TO_TOP).setEnabled(false);
+                getAction(ACTION_MOVE_UP).setEnabled(false);
+                getAction(ACTION_MOVE_DOWN).setEnabled(false);
+                getAction(ACTION_MOVE_TO_BOTTOM).setEnabled(false);
+            }
             getAction(ACTION_MOVE_TO).setEnabled(hasSelection);
             getAction(ACTION_EDIT_GLYPH).setEnabled(hasSelection);
             getAction(ACTION_DELETE_GLYPHS).setEnabled(hasSelection);
@@ -1406,7 +1416,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             bClose.setBorderPainted(false);
             bClose.setFocusPainted(false);
             bClose.setOpaque(false);
-            bClose.setPreferredSize(new Dimension(19,19));
+            bClose.setPreferredSize(new Dimension(19, 19));
             bClose.setIcon(new ImageIcon("res/images/icon/close.png"));
             bClose.setPressedIcon(new ImageIcon("res/images/icon/close_active.png"));
             bClose.setRolloverEnabled(true);
