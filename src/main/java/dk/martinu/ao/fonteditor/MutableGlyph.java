@@ -142,7 +142,6 @@ public class MutableGlyph {
                 int[] samples = new int[len];
                 image.getRaster().getSamples(0, 0, width, height, 3, samples);
                 for (int i = 0; i < len; i++) {
-                    System.out.println("sample value: " + samples[i]);
                     data[i] = (byte) samples[i];
                 }
             }
