@@ -71,6 +71,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     public static final String CK_ALPHA_SLIDER = "alphaSlider";
     public static final String CK_ALPHA_SPINNER = "alphaSpinner";
     public static final String CK_B_TOOL_ERASER = "buttonToolEraser";
+    public static final String CK_B_TOOL_MOVE = "buttonToolMove";
     public static final String CK_B_TOOL_PENCIL = "buttonToolPencil";
     public static final String CK_B_TOOL_PICKER = "buttonToolPicker";
     public static final String CK_B_TOOL_SELECT = "buttonToolSelect";
@@ -87,25 +88,27 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
     public static final String CK_TOOL_BAR = "toolBar";
 
     /**
-     * Constant to move the list selection to the top.
+     * Constant to decrease the position (index) of the list selection to the
+     * lowest possible value.
      *
      * @see #moveListSelectionTo(int)
      */
     public static final int MOVE_TO_TOP = -1;
     /**
-     * Constant to move the list selection to the bottom.
+     * Constant to increase the position (index) of the list selection to the
+     * highest possible value.
      *
      * @see #moveListSelectionTo(int)
      */
     public static final int MOVE_TO_BOTTOM = -2;
     /**
-     * Constant to increment the position of the list selection by one.
+     * Constant to decrease the position (index) of the list selection by one.
      *
      * @see #moveListSelectionTo(int)
      */
     public static final int MOVE_UP = -3;
     /**
-     * Constant to decrease the position of the list selection by one.
+     * Constant to increase the position (index) of the list selection by one.
      *
      * @see #moveListSelectionTo(int)
      */
@@ -742,7 +745,8 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         Tool oldTool = this.tool;
         if (tool != this.tool) {
             switch (tool) {
-                case MOVE -> toolGroup.clearSelection();
+                case MOVE ->
+                        toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_MOVE)).getModel(), true);
                 case SELECT ->
                         toolGroup.setSelected(((JToggleButton) getComponent(CK_B_TOOL_SELECT)).getModel(), true);
                 case PENCIL ->
@@ -977,6 +981,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         JButton bMoveDown = new JButton(getAction(ACTION_MOVE_DOWN));
         JButton bMoveToBottom = new JButton(getAction(ACTION_MOVE_TO_BOTTOM));
         JButton bMoveTo = new JButton(getAction(ACTION_MOVE_TO));
+        JToggleButton bToolMove = new JToggleButton(getAction(ACTION_TOOL_MOVE));
         JToggleButton bToolSelect = new JToggleButton(getAction(ACTION_TOOL_SELECT));
         JToggleButton bToolPencil = new JToggleButton(getAction(ACTION_TOOL_PENCIL));
         JToggleButton bToolEraser = new JToggleButton(getAction(ACTION_TOOL_ERASER));
@@ -1057,6 +1062,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             boolean hasTab = tabbedPane.getTabCount() != 0;
             getAction(ACTION_EDIT_HORIZONTAL_OFFSETS).setEnabled(hasTab);
             getAction(ACTION_EDIT_GLYPH_PROPERTIES).setEnabled(hasTab);
+            getAction(ACTION_TOOL_MOVE).setEnabled(hasTab);
             getAction(ACTION_TOOL_SELECT).setEnabled(hasTab);
             getAction(ACTION_TOOL_PENCIL).setEnabled(hasTab);
             getAction(ACTION_TOOL_ERASER).setEnabled(hasTab);
@@ -1067,10 +1073,11 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
             }
         });
 
+        componentMap.put(CK_B_TOOL_MOVE, bToolMove);
+        bToolSelect.setName(CK_B_TOOL_MOVE);
+
         componentMap.put(CK_B_TOOL_SELECT, bToolSelect);
         bToolSelect.setName(CK_B_TOOL_SELECT);
-        bToolSelect.setVerticalAlignment(SwingConstants.CENTER);
-        bToolSelect.setAlignmentY(CENTER_ALIGNMENT);
 
         componentMap.put(CK_B_TOOL_PENCIL, bToolPencil);
         bToolPencil.setName(CK_B_TOOL_PENCIL);
@@ -1084,6 +1091,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         componentMap.put(CK_B_TOOL_ZOOM, bToolZoom);
         bToolZoom.setName(CK_B_TOOL_ZOOM);
 
+        toolGroup.add(bToolMove);
         toolGroup.add(bToolSelect);
         toolGroup.add(bToolPencil);
         toolGroup.add(bToolEraser);
@@ -1138,6 +1146,7 @@ public class EditorFrame extends JFrame implements PropertyChangeListener {
         toolBar.add(bMoveTo);
         toolBar.addSeparator();
         toolBar.add(Box.createHorizontalGlue());
+        toolBar.add(bToolMove);
         toolBar.add(bToolSelect);
         toolBar.add(bToolPencil);
         toolBar.add(bToolEraser);
