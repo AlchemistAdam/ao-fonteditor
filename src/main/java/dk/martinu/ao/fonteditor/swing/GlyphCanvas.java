@@ -47,7 +47,7 @@ public class GlyphCanvas extends JComponent implements PropertyChangeListener {
      *
      * @see #setZoom(int)
      */
-    public static final int MAX_ZOOM = 20;
+    public static final int MAX_ZOOM = 40;
     /**
      * The minimum zoom value.
      *
